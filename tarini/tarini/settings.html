@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Project AUTOREV - AI – Settings</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- ---------------- NAV ---------------- -->
+<div class="nav">
+    <div class="logo">AUTOREV - AI</div>
+
+    <div class="nav-links">
+        <a href="dashboard.html">Home</a>
+        <a href="index.html">Controller</a>
+        <a href="voice.html">Voice</a>
+        <a href="#" onclick="toggleLiveFeed(); return false;" style="color: #ccc; text-decoration: none; font-size: 15px; letter-spacing: 1px; transition: 0.3s; text-transform: uppercase; cursor: pointer;">Live Feed</a>
+        <a href="settings.html">Settings</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="page-title">SYSTEM SETTINGS</div>
+    <div class="page-subtitle">CONFIGURE ROBOT PARAMETERS</div>
+
+    <div id="status-msg"></div>
+
+    <!-- SPEED CONTROL -->
+    <div class="card">
+        <h2>MOTOR SPEED</h2>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+            <span>SLOW</span>
+            <input type="range" min="0" max="255" value="180" id="speedSlider" oninput="updateSpeedDisplay(this.value)" onchange="send('V'+this.value)">
+            <span>FAST</span>
+        </div>
+        <div style="margin-top: 10px; color: var(--neon); font-size: 20px;" id="speedValue">180</div>
+    </div>
+
+    <!-- OBSTACLE DETECTION -->
+    <div class="card">
+        <h2>OBSTACLE DETECTION (LIDAR/ULTRASONIC)</h2>
+        
+        <div style="margin-bottom: 20px;">
+            <button class="btn" onclick="send('USON')">ENABLE SENSORS</button>
+            <button class="btn btn-danger" onclick="send('USOFF')">DISABLE SENSORS</button>
+        </div>
+
+        <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+            <p style="color: #ccc;">STOP DISTANCE THRESHOLD (CM)</p>
+            <input type="number" id="dist" value="15">
+            <button class="btn" onclick="send('USD' + document.getElementById('dist').value)">SET DISTANCE</button>
+        </div>
+    </div>
+
+    <!-- IP WEBCAM SETTINGS -->
+    <div class="card">
+        <h2>IP WEBCAM SETTINGS</h2>
+        <div style="margin-bottom: 15px;">
+            <p style="color: #ccc; margin-bottom: 10px;">IP WEBCAM ADDRESS</p>
+            <input type="text" id="webcamIP" placeholder="IP:Port (e.g., 192.168.1.100:8080)" 
+                   style="width: 300px; margin-right: 10px;">
+            <button class="btn" onclick="saveWebcamIP()" style="padding: 10px 20px; font-size: 14px;">SAVE IP</button>
+        </div>
+        <div id="ipStatus" style="color: var(--neon); font-size: 14px; margin-top: 10px;"></div>
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+<script>
+    function updateSpeedDisplay(val) {
+        document.getElementById('speedValue').innerText = val;
+    }
+
+    // Load saved IP on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedIP = localStorage.getItem('webcamIP');
+        if (savedIP) {
+            document.getElementById('webcamIP').value = savedIP;
+            document.getElementById('ipStatus').innerText = 'Saved IP: ' + savedIP;
+        }
+    });
+
+    function saveWebcamIP() {
+        const ipInput = document.getElementById('webcamIP').value.trim();
+        if (!ipInput) {
+            alert('Please enter IP:Port (e.g., 192.168.1.100:8080)');
+            return;
+        }
+        
+        // Save to localStorage
+        localStorage.setItem('webcamIP', ipInput);
+        document.getElementById('ipStatus').innerText = 'IP Address Saved: ' + ipInput;
+        document.getElementById('ipStatus').style.color = '#00fff6';
+        
+        // Show success message
+        setTimeout(() => {
+            document.getElementById('ipStatus').innerText = 'IP saved successfully! Camera will auto-connect in all modes.';
+        }, 500);
+    }
+</script>
+
+</body>
+</html>

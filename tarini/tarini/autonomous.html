@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Project AUTOREV - AI – Autonomous Control</title>
+<link rel="stylesheet" href="style.css">
+<style>
+    .status-indicator {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 10px;
+        background: #00fff6;
+        box-shadow: 0 0 10px rgba(0, 255, 246, 0.5);
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(0, 255, 246, 0.7); }
+        70% { box-shadow: 0 0 0 15px rgba(0, 255, 246, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 255, 246, 0); }
+    }
+    .controls-layout {
+        display: flex;
+        gap: 30px;
+        justify-content: center;
+        align-items: flex-start;
+        flex-wrap: nowrap;
+    }
+    @media (max-width: 1200px) {
+        .controls-layout {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<!-- ---------------- NAV ---------------- -->
+<div class="nav">
+    <div class="logo">AUTO REV - AI</div>
+
+    <div class="nav-links">
+        <a href="dashboard.html">Home</a>
+        <a href="index.html">Controller</a>
+        <a href="voice.html">Voice</a>
+        <a href="#" onclick="toggleLiveFeed(); return false;" style="color: #ccc; text-decoration: none; font-size: 15px; letter-spacing: 1px; transition: 0.3s; text-transform: uppercase; cursor: pointer;">Live Feed</a>
+        <a href="settings.html">Settings</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="page-title">AUTONOMOUS MODE</div>
+    <div class="page-subtitle">ROBOT OPERATING AUTONOMOUSLY</div>
+
+    <div id="status-msg"></div>
+
+    <div class="controls-layout">
+        <!-- Autonomous Status on Left -->
+        <div class="card" style="width: 450px; flex: 0 0 auto; min-width: 400px;">
+            <h2>SYSTEM STATUS</h2>
+            
+            <div style="text-align: left; margin: 20px 0; color: #ccc;">
+                <div style="margin-bottom: 15px; padding: 15px; background: rgba(0, 255, 246, 0.1); border-left: 3px solid var(--neon);">
+                    <span class="status-indicator"></span>
+                    <strong style="color: var(--neon);">AUTONOMOUS MODE ACTIVE</strong>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <strong>Mode:</strong> Autonomous<br>
+                    <strong>Status:</strong> <span style="color: var(--neon);">Running</span>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <strong>Features Active:</strong><br>
+                    • Sensor-based navigation<br>
+                    • Obstacle avoidance<br>
+                    • Autonomous decision making
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <button class="btn btn-danger" onclick="deactivateAuto()" style="width: 100%;">
+                        DEACTIVATE AUTO MODE
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Feed on Right -->
+        <div class="card" style="width: 550px; flex: 0 0 auto; min-width: 500px;">
+            <h2>LIVE FEED</h2>
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="cameraIP" placeholder="IP:Port (e.g., 192.168.1.100:8080)" 
+                       style="width: 250px; margin-right: 10px;">
+                <button class="btn" onclick="connectCamera()" style="padding: 10px 20px; font-size: 14px;">Connect</button>
+            </div>
+            <div id="liveFeedContainer" style="width: 100%; background: #000; border: 2px solid var(--neon); border-radius: 5px; overflow: hidden; min-height: 300px; display: flex; align-items: center; justify-content: center;">
+                <div id="feedStatus" style="color: var(--gray);">Enter IP and click Connect</div>
+                <img id="liveFeed" style="display: none; width: 100%; height: auto; max-height: 500px;" alt="Live Feed">
+            </div>
+        </div>
+    </div>
+
+    <a href="index.html" class="btn" style="display: inline-block; margin-top: 20px;">&larr; BACK TO MODES</a>
+</div>
+
+<script src="script.js"></script>
+<script>
+    let liveFeedInterval = null;
+    let currentFeedURL = null;
+
+    // Load saved IP and auto-connect on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedIP = localStorage.getItem('webcamIP');
+        if (savedIP) {
+            document.getElementById('cameraIP').value = savedIP;
+            // Auto-connect after a short delay
+            setTimeout(() => {
+                connectCamera();
+            }, 500);
+        }
+    });
+
+    function deactivateAuto() {
+        if (confirm('Are you sure you want to deactivate Autonomous Mode?')) {
+            send('MODE MANUAL');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 500);
+        }
+    }
+
+    // Connect to IP Webcam
+    function connectCamera() {
+        const ipInput = document.getElementById('cameraIP').value.trim();
+        if (!ipInput) {
+            alert('Please enter IP:Port (e.g., 192.168.1.100:8080)');
+            return;
+        }
+
+        // Save IP to localStorage
+        localStorage.setItem('webcamIP', ipInput);
+
+        // Stop existing feed if any
+        if (liveFeedInterval) {
+            clearInterval(liveFeedInterval);
+            liveFeedInterval = null;
+        }
+
+        const feedImg = document.getElementById('liveFeed');
+        const feedStatus = document.getElementById('feedStatus');
+
+        // Construct IP Webcam video URL
+        const videoURL = `http://${ipInput}/video`;
+        currentFeedURL = videoURL;
+
+        feedStatus.innerText = 'Connecting...';
+        feedStatus.style.color = '#00fff6';
+        feedStatus.style.display = 'block';
+        feedImg.style.display = 'none';
+
+        // Set up error handler before setting src
+        feedImg.onerror = function() {
+            feedImg.style.display = 'none';
+            feedStatus.style.display = 'block';
+            feedStatus.innerText = 'Connection Failed. Check IP and ensure IP Webcam is running.';
+            feedStatus.style.color = '#ff3366';
+            if (liveFeedInterval) {
+                clearInterval(liveFeedInterval);
+                liveFeedInterval = null;
+            }
+        };
+
+        feedImg.onload = function() {
+            feedStatus.style.display = 'none';
+            feedImg.style.display = 'block';
+        };
+
+        // Try to load the feed
+        feedImg.src = videoURL;
+
+        // For MJPEG streams, add a periodic check to ensure connection is alive
+        liveFeedInterval = setInterval(() => {
+            if (feedImg.complete && feedImg.naturalHeight !== 0) {
+                // Feed is working - no action needed
+            } else {
+                // Connection might be lost, try to reconnect
+                const timestamp = new Date().getTime();
+                feedImg.src = `${videoURL}?t=${timestamp}`;
+            }
+        }, 10000); // Check every 10 seconds
+    }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (liveFeedInterval) {
+            clearInterval(liveFeedInterval);
+        }
+    });
+</script>
+
+</body>
+</html>
+

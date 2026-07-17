@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Project Swarm – Manual Control</title>
+<link rel="stylesheet" href="style.css">
+<style>
+    .control-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 0;
+    }
+    .control-btn {
+        width: 100%;
+        height: 80px;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 !important;
+        box-sizing: border-box;
+    }
+    .card .control-grid .btn {
+        margin: 0 !important;
+    }
+    .key-hint {
+        font-size: 12px;
+        color: var(--gray);
+        display: block;
+        margin-top: 5px;
+    }
+    .controls-layout {
+        display: flex;
+        gap: 30px;
+        justify-content: center;
+        align-items: flex-start;
+        flex-wrap: nowrap;
+    }
+    @media (max-width: 1200px) {
+        .controls-layout {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<!-- ---------------- NAV ---------------- -->
+<div class="nav">
+    <div class="logo">AUTOREV - AI</div>
+
+    <div class="nav-links">
+        <a href="dashboard.html">Home</a>
+        <a href="index.html">Controller</a>
+        <a href="voice.html">Voice</a>
+        <a href="#" onclick="toggleLiveFeed(); return false;" style="color: #ccc; text-decoration: none; font-size: 15px; letter-spacing: 1px; transition: 0.3s; text-transform: uppercase; cursor: pointer;">Live Feed</a>
+        <a href="settings.html">Settings</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="page-title">MANUAL CONTROL</div>
+    <div class="page-subtitle">USE WASD KEYS OR BUTTONS</div>
+
+    <div id="status-msg"></div>
+
+    <div class="controls-layout">
+        <!-- Controls on Left -->
+        <div class="card" style="width: 450px; flex: 0 0 auto; min-width: 400px;">
+            <div class="control-grid" style="padding: 0;">
+                <div></div>
+                <button class="btn control-btn" onclick="send('F')" style="margin: 0;">
+                    ▲
+                    <!-- <span class="key-hint">W</span> -->
+                </button>
+                <div></div>
+
+                <button class="btn control-btn" onclick="send('L')" style="margin: 0;">◀</button>
+                <button class="btn control-btn btn-danger" onclick="send('S')" style="margin: 0;">STOP</button>
+                <button class="btn control-btn" onclick="send('R')" style="margin: 0;">▶</button>
+
+                <div></div>
+                <button class="btn control-btn" onclick="send('B')" style="margin: 0;">▼</button>
+                <div></div>
+            </div>
+            
+            <div style="margin-top: 30px; color: var(--gray); font-size: 14px;">
+                KEYBOARD SHORTCUTS ACTIVE<br>
+                [ W ] Forward &nbsp; [ S ] Backward<br>
+                [ A ] Left &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ D ] Right<br>
+                [ SPACE ] Stop
+            </div>
+        </div>
+
+        <!-- Live Feed on Right -->
+        <div class="card" style="width: 550px; flex: 0 0 auto; min-width: 500px;">
+            <h2>LIVE FEED</h2>
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="cameraIP" placeholder="IP:Port (e.g., 192.168.1.100:8080)" 
+                       style="width: 250px; margin-right: 10px;">
+                <button class="btn" onclick="connectCamera()" style="padding: 10px 20px; font-size: 14px;">Connect</button>
+            </div>
+            <div id="liveFeedContainer" style="width: 100%; background: #000; border: 2px solid var(--neon); border-radius: 5px; overflow: hidden; min-height: 300px; display: flex; align-items: center; justify-content: center;">
+                <div id="feedStatus" style="color: var(--gray);">Enter IP and click Connect</div>
+                <img id="liveFeed" style="display: none; width: 100%; height: auto; max-height: 500px;" alt="Live Feed">
+            </div>
+        </div>
+    </div>
+
+    <a href="index.html" class="btn" style="display: inline-block; margin-top: 20px;">&larr; BACK TO MODES</a>
+</div>
+
+<script src="script.js"></script>
+<script>
+    let liveFeedInterval = null;
+    let currentFeedURL = null;
+
+    // Load saved IP and auto-connect on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedIP = localStorage.getItem('webcamIP');
+        if (savedIP) {
+            document.getElementById('cameraIP').value = savedIP;
+            // Auto-connect after a short delay
+            setTimeout(() => {
+                connectCamera();
+            }, 500);
+        }
+    });
+
+    // Keyboard Control
+    document.addEventListener('keydown', (event) => {
+        const key = event.key.toLowerCase();
+        if (key === 'w') send('F');
+        else if (key === 's') send('B');
+        else if (key === 'a') send('L');
+        else if (key === 'd') send('R');
+        else if (key === ' ') send('S');
+    });
+
+    // Connect to IP Webcam
+    function connectCamera() {
+        const ipInput = document.getElementById('cameraIP').value.trim();
+        if (!ipInput) {
+            alert('Please enter IP:Port (e.g., 192.168.1.100:8080)');
+            return;
+        }
+
+        // Save IP to localStorage
+        localStorage.setItem('webcamIP', ipInput);
+
+        // Stop existing feed if any
+        if (liveFeedInterval) {
+            clearInterval(liveFeedInterval);
+            liveFeedInterval = null;
+        }
+
+        const feedImg = document.getElementById('liveFeed');
+        const feedStatus = document.getElementById('feedStatus');
+
+        // Construct IP Webcam video URL
+        // IP Webcam provides MJPEG stream at /video endpoint
+        // Alternative endpoints: /videofeed, /shot.jpg (for snapshot mode)
+        const videoURL = `http://${ipInput}/video`;
+        currentFeedURL = videoURL;
+
+        feedStatus.innerText = 'Connecting...';
+        feedStatus.style.color = '#00fff6';
+        feedStatus.style.display = 'block';
+        feedImg.style.display = 'none';
+
+        // Set up error handler before setting src
+        feedImg.onerror = function() {
+            feedImg.style.display = 'none';
+            feedStatus.style.display = 'block';
+            feedStatus.innerText = 'Connection Failed. Check IP and ensure IP Webcam is running.';
+            feedStatus.style.color = '#ff3366';
+            if (liveFeedInterval) {
+                clearInterval(liveFeedInterval);
+                liveFeedInterval = null;
+            }
+        };
+
+        feedImg.onload = function() {
+            feedStatus.style.display = 'none';
+            feedImg.style.display = 'block';
+        };
+
+        // Try to load the feed
+        feedImg.src = videoURL;
+
+        // For MJPEG streams, add a periodic check to ensure connection is alive
+        liveFeedInterval = setInterval(() => {
+            if (feedImg.complete && feedImg.naturalHeight !== 0) {
+                // Feed is working - no action needed
+            } else {
+                // Connection might be lost, try to reconnect
+                const timestamp = new Date().getTime();
+                feedImg.src = `${videoURL}?t=${timestamp}`;
+            }
+        }, 10000); // Check every 10 seconds
+    }
+
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (liveFeedInterval) {
+            clearInterval(liveFeedInterval);
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Project AUTOREV - AI – Live Feed</title>
+<link rel="stylesheet" href="style.css">
+<style>
+    .live-feed-fullscreen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 100px);
+        padding: 40px 20px;
+    }
+    .live-feed-container {
+        width: 100%;
+        max-width: 1200px;
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, .15);
+        border-left: 4px solid var(--neon);
+        padding: 30px;
+        border-radius: 5px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+    .live-feed-display {
+        width: 100%;
+        background: #000;
+        border: 2px solid var(--neon);
+        border-radius: 5px;
+        overflow: hidden;
+        min-height: 500px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+    #liveFeedFullscreen {
+        width: 100%;
+        height: auto;
+        max-height: 80vh;
+        display: none;
+    }
+    #feedStatusFullscreen {
+        color: var(--gray);
+        font-size: 18px;
+    }
+</style>
+</head>
+
+<body>
+
+<!-- ---------------- NAV ---------------- -->
+<div class="nav">
+    <div class="logo">AUTOREV - AI</div>
+
+    <div class="nav-links">
+        <a href="dashboard.html">Home</a>
+        <a href="index.html">Controller</a>
+        <a href="voice.html">Voice</a>
+        <a href="#" onclick="toggleLiveFeed(); return false;" style="color: #ccc; text-decoration: none; font-size: 15px; letter-spacing: 1px; transition: 0.3s; text-transform: uppercase; cursor: pointer;">Live Feed</a>
+        <a href="settings.html">Settings</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="live-feed-fullscreen">
+        <div class="live-feed-container">
+            <h2 style="text-align: center; margin-bottom: 20px; color: var(--neon);">LIVE FEED</h2>
+            <div style="margin-bottom: 15px; text-align: center;">
+                <input type="text" id="cameraIPFullscreen" placeholder="IP:Port (e.g., 192.168.1.100:8080)" 
+                       style="width: 300px; margin-right: 10px;">
+                <button class="btn" onclick="connectCameraFullscreen()" style="padding: 10px 20px; font-size: 14px;">Connect</button>
+            </div>
+            <div class="live-feed-display">
+                <div id="feedStatusFullscreen">Enter IP and click Connect</div>
+                <img id="liveFeedFullscreen" alt="Live Feed">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+<script>
+    let liveFeedInterval = null;
+    let currentFeedURL = null;
+
+    // Load saved IP and auto-connect on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedIP = localStorage.getItem('webcamIP');
+        if (savedIP) {
+            document.getElementById('cameraIPFullscreen').value = savedIP;
+            // Auto-connect after a short delay
+            setTimeout(() => {
+                connectCameraFullscreen();
+            }, 500);
+        }
+    });
+
+    // Connect to IP Webcam
+    function connectCameraFullscreen() {
+        const ipInput = document.getElementById('cameraIPFullscreen').value.trim();
+        if (!ipInput) {
+            alert('Please enter IP:Port (e.g., 192.168.1.100:8080)');
+            return;
+        }
+
+        // Save IP to localStorage
+        localStorage.setItem('webcamIP', ipInput);
+
+        // Stop existing feed if any
+        if (liveFeedInterval) {
+            clearInterval(liveFeedInterval);
+            liveFeedInterval = null;
+        }
+
+        const feedImg = document.getElementById('liveFeedFullscreen');
+        const feedStatus = document.getElementById('feedStatusFullscreen');
+
+        // Construct IP Webcam video URL
+        const videoURL = `http://${ipInput}/video`;
+        currentFeedURL = videoURL;
+
+        feedStatus.innerText = 'Connecting...';
+        feedStatus.style.color = '#00fff6';
+        feedStatus.style.display = 'block';
+        feedImg.style.display = 'none';
+
+        // Set up error handler before setting src
+        feedImg.onerror = function() {
+            feedImg.style.display = 'none';
+            feedStatus.style.display = 'block';
+            feedStatus.innerText = 'Connection Failed. Check IP and ensure IP Webcam is running.';
+            feedStatus.style.color = '#ff3366';
+            if (liveFeedInterval) {
+                clearInterval(liveFeedInterval);
+                liveFeedInterval = null;
+            }
+        };
+
+        feedImg.onload = function() {
+            feedStatus.style.display = 'none';
+            feedImg.style.display = 'block';
+        };
+
+        // Try to load the feed
+        feedImg.src = videoURL;
+
+        // For MJPEG streams, add a periodic check to ensure connection is alive
+        liveFeedInterval = setInterval(() => {
+            if (feedImg.complete && feedImg.naturalHeight !== 0) {
+                // Feed is working - no action needed
+            } else {
+                // Connection might be lost, try to reconnect
+                const timestamp = new Date().getTime();
+                feedImg.src = `${videoURL}?t=${timestamp}`;
+            }
+        }, 10000); // Check every 10 seconds
+    }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (liveFeedInterval) {
+            clearInterval(liveFeedInterval);
+        }
+    });
+</script>
+
+</body>
+</html>
+

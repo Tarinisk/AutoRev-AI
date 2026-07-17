@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Project AUTOREV - AI – Voice Control</title>
+<link rel="stylesheet" href="style.css">
+<style>
+    .mic-btn {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        font-size: 40px;
+        margin: 30px auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 255, 246, 0.1);
+        border: 2px solid var(--neon);
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    .mic-btn.listening {
+        background: var(--neon);
+        color: black;
+        box-shadow: 0 0 50px var(--neon);
+        animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(0, 255, 246, 0.7); }
+        70% { box-shadow: 0 0 0 20px rgba(0, 255, 246, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 255, 246, 0); }
+    }
+    .command-log {
+        height: 150px;
+        overflow-y: auto;
+        background: rgba(0,0,0,0.5);
+        border: 1px solid var(--gray);
+        padding: 15px;
+        margin-top: 20px;
+        text-align: left;
+        font-family: monospace;
+    }
+    .log-item {
+        margin-bottom: 5px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 2px;
+    }
+    .log-time { color: var(--gray); margin-right: 10px; }
+    .log-cmd { color: var(--neon); font-weight: bold; }
+    .controls-layout {
+        display: flex;
+        gap: 30px;
+        justify-content: center;
+        align-items: flex-start;
+        flex-wrap: nowrap;
+    }
+    @media (max-width: 1200px) {
+        .controls-layout {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<!-- ---------------- NAV ---------------- -->
+<div class="nav">
+    <div class="logo">AUTOREV - AI</div>
+
+    <div class="nav-links">
+        <a href="dashboard.html">Home</a>
+        <a href="index.html">Controller</a>
+        <a href="voice.html">Voice</a>
+        <a href="#" onclick="toggleLiveFeed(); return false;" style="color: #ccc; text-decoration: none; font-size: 15px; letter-spacing: 1px; transition: 0.3s; text-transform: uppercase; cursor: pointer;">Live Feed</a>
+        <a href="settings.html">Settings</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="page-title">VOICE CONTROL</div>
+    <div class="page-subtitle">SPEAK COMMANDS TO CONTROL ROBOT</div>
+
+    <div id="status-msg"></div>
+
+    <div class="controls-layout">
+        <!-- Voice Control on Left -->
+        <div class="card" style="width: 500px; flex: 0 0 auto; min-width: 450px;">
+            <div id="micButton" class="mic-btn" onclick="toggleVoice()">
+                🎤
+            </div>
+            <div id="micStatus" style="font-size: 18px; letter-spacing: 2px; margin-bottom: 20px;">
+                CLICK MIC TO START
+            </div>
+
+            <div style="text-align: left; margin: 20px 0; color: #ccc;">
+                <strong>Supported Commands:</strong><br>
+                • "Forward" / "Go"<br>
+                • "Backward" / "Back"<br>
+                • "Left" / "Turn Left"<br>
+                • "Right" / "Turn Right"<br>
+                • "Stop" / "Halt"
+            </div>
+
+            <div class="command-log" id="logBox">
+                <!-- Logs appear here -->
+            </div>
+        </div>
+
+        <!-- Live Feed on Right -->
+        <div class="card" style="width: 550px; flex: 0 0 auto; min-width: 500px;">
+            <h2>LIVE FEED</h2>
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="cameraIP" placeholder="IP:Port (e.g., 192.168.1.100:8080)" 
+                       style="width: 250px; margin-right: 10px;">
+                <button class="btn" onclick="connectCamera()" style="padding: 10px 20px; font-size: 14px;">Connect</button>
+            </div>
+            <div id="liveFeedContainer" style="width: 100%; background: #000; border: 2px solid var(--neon); border-radius: 5px; overflow: hidden; min-height: 300px; display: flex; align-items: center; justify-content: center;">
+                <div id="feedStatus" style="color: var(--gray);">Enter IP and click Connect</div>
+                <img id="liveFeed" style="display: none; width: 100%; height: auto; max-height: 500px;" alt="Live Feed">
+            </div>
+        </div>
+    </div>
+
+    <a href="index.html" class="btn" style="display: inline-block; margin-top: 20px;">&larr; BACK TO MODES</a>
+</div>
+
+<script src="script.js"></script>
+<script>
+    let recognition;
+    let isListening = false;
+    let liveFeedInterval = null;
+    let currentFeedURL = null;
+
+    // Load saved IP and auto-connect on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedIP = localStorage.getItem('webcamIP');
+        if (savedIP) {
+            document.getElementById('cameraIP').value = savedIP;
+            // Auto-connect after a short delay
+            setTimeout(() => {
+                connectCamera();
+            }, 500);
+        }
+    });
+
+    if ('webkitSpeechRecognition' in window) {
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = function() {
+            isListening = true;
+            document.getElementById('micButton').classList.add('listening');
+            document.getElementById('micStatus').innerText = "LISTENING... (Speak Now)";
+            document.getElementById('micStatus').style.color = "var(--neon)";
+        };
+
+        recognition.onend = function() {
+            isListening = false;
+            document.getElementById('micButton').classList.remove('listening');
+            document.getElementById('micStatus').innerText = "MIC OFF";
+            document.getElementById('micStatus').style.color = "white";
+        };
+
+        recognition.onerror = function(event) {
+            console.error("Speech Error:", event.error);
+            document.getElementById('micStatus').innerText = "ERROR: " + event.error;
+            document.getElementById('micStatus').style.color = "#ff3366";
+            if(event.error === 'not-allowed') {
+                alert("Microphone access blocked!\nPlease click the lock icon in the URL bar and Allow Microphone.");
+            }
+        };
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+            console.log("Heard:", transcript); // Debug log
+            processCommand(transcript);
+        };
+    } else {
+        alert("Voice recognition not supported in this browser. Please use Chrome.");
+    }
+
+    function toggleVoice() {
+        if (!recognition) return;
+        if (isListening) recognition.stop();
+        else recognition.start();
+    }
+
+    async function processCommand(text) {
+        // Send the raw text to the server for "Smart" processing
+        const result = await send(text);
+        
+        if (result && result.status === "OK") {
+            // Map code to readable name
+            const codeMap = {
+                "F": "FORWARD", "B": "BACKWARD", "L": "LEFT", "R": "RIGHT", "S": "STOP"
+            };
+            const actionName = codeMap[result.sent] || result.sent;
+            logCommand(text, "AI: " + actionName);
+        } else if (result && result.status === "IGNORED") {
+            logCommand(text, "AI: ??? (Ignored)");
+        } else {
+            logCommand(text, "Server Error");
+        }
+    }
+
+    function logCommand(text, action) {
+        const box = document.getElementById('logBox');
+        const time = new Date().toLocaleTimeString();
+        const html = `
+            <div class="log-item">
+                <span class="log-time">[${time}]</span>
+                <span class="log-cmd">"${text}"</span> &rarr; ${action}
+            </div>
+        `;
+        box.innerHTML = html + box.innerHTML;
+    }
+
+    // Connect to IP Webcam
+    function connectCamera() {
+        const ipInput = document.getElementById('cameraIP').value.trim();
+        if (!ipInput) {
+            alert('Please enter IP:Port (e.g., 192.168.1.100:8080)');
+            return;
+        }
+
+        // Save IP to localStorage
+        localStorage.setItem('webcamIP', ipInput);
+
+        // Stop existing feed if any
+        if (liveFeedInterval) {
+            clearInterval(liveFeedInterval);
+            liveFeedInterval = null;
+        }
+
+        const feedImg = document.getElementById('liveFeed');
+        const feedStatus = document.getElementById('feedStatus');
+
+        // Construct IP Webcam video URL
+        const videoURL = `http://${ipInput}/video`;
+        currentFeedURL = videoURL;
+
+        feedStatus.innerText = 'Connecting...';
+        feedStatus.style.color = '#00fff6';
+        feedStatus.style.display = 'block';
+        feedImg.style.display = 'none';
+
+        // Set up error handler before setting src
+        feedImg.onerror = function() {
+            feedImg.style.display = 'none';
+            feedStatus.style.display = 'block';
+            feedStatus.innerText = 'Connection Failed. Check IP and ensure IP Webcam is running.';
+            feedStatus.style.color = '#ff3366';
+            if (liveFeedInterval) {
+                clearInterval(liveFeedInterval);
+                liveFeedInterval = null;
+            }
+        };
+
+        feedImg.onload = function() {
+            feedStatus.style.display = 'none';
+            feedImg.style.display = 'block';
+        };
+
+        // Try to load the feed
+        feedImg.src = videoURL;
+
+        // For MJPEG streams, add a periodic check to ensure connection is alive
+        liveFeedInterval = setInterval(() => {
+            if (feedImg.complete && feedImg.naturalHeight !== 0) {
+                // Feed is working - no action needed
+            } else {
+                // Connection might be lost, try to reconnect
+                const timestamp = new Date().getTime();
+                feedImg.src = `${videoURL}?t=${timestamp}`;
+            }
+        }, 10000); // Check every 10 seconds
+    }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (liveFeedInterval) {
+            clearInterval(liveFeedInterval);
+        }
+    });
+</script>
+
+</body>
+</html>

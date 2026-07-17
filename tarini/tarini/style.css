@@ -1,0 +1,222 @@
+/* ---------------- GLOBAL ---------------- */
+body {
+    margin: 0;
+    background: #05080f;
+    color: white;
+    font-family: 'Segoe UI', sans-serif;
+    overflow-x: hidden;
+    text-align: center;
+}
+
+/* Futuristic Grid Background */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+        linear-gradient(rgba(0, 255, 255, .08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, .08) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: .25;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Neon Blue Accent */
+:root {
+    --neon: #00fff6;
+    --neon-dim: rgba(0, 255, 246, 0.3);
+    --gray: #9aa0a6;
+    --accent: #ff3366;
+    --bg-card: rgba(0, 0, 0, .5);
+}
+
+/* ---------------- NAVBAR ---------------- */
+.nav {
+    width: 100%;
+    border-bottom: 2px solid var(--neon);
+    padding: 14px 55px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(5, 8, 15, 0.9);
+    box-sizing: border-box;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(5px);
+}
+
+.logo {
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: var(--neon);
+    font-weight: bold;
+    text-shadow: 0 0 10px var(--neon-dim);
+}
+
+.nav-links {
+    display: flex;
+    gap: 30px;
+}
+
+.nav-links a {
+    color: #ccc;
+    text-decoration: none;
+    font-size: 15px;
+    letter-spacing: 1px;
+    transition: 0.3s;
+    text-transform: uppercase;
+}
+
+.nav-links a:hover, .nav-links a.active {
+    color: white;
+    text-shadow: 0 0 8px var(--neon);
+}
+
+/* ---------------- COMMON ELEMENTS ---------------- */
+.container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.page-title {
+    font-size: 40px;
+    margin-bottom: 10px;
+    color: white;
+    letter-spacing: 4px;
+    text-shadow: 0 0 15px rgba(0, 255, 255, .5);
+}
+
+.page-subtitle {
+    color: var(--neon);
+    letter-spacing: 2px;
+    font-size: 16px;
+    margin-bottom: 40px;
+}
+
+/* Cards */
+.card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, .15);
+    border-left: 4px solid var(--neon);
+    padding: 30px;
+    margin: 20px auto;
+    border-radius: 5px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(0, 255, 246, 0.1);
+}
+
+.card h2 {
+    margin-top: 0;
+    color: var(--gray);
+    font-size: 18px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* Buttons */
+.btn {
+    background: transparent;
+    color: var(--neon);
+    border: 2px solid var(--neon);
+    padding: 15px 30px;
+    font-size: 16px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: 0.3s;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin: 10px;
+    min-width: 150px;
+    box-shadow: 0 0 10px var(--neon-dim);
+}
+
+.btn:hover {
+    background: var(--neon);
+    color: black;
+    box-shadow: 0 0 20px var(--neon);
+}
+
+.btn-danger {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 10px rgba(255, 51, 102, 0.3);
+}
+
+.btn-danger:hover {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 0 20px var(--accent);
+}
+
+.btn-large {
+    padding: 30px 50px;
+    font-size: 24px;
+    width: 100%;
+    max-width: 400px;
+    display: block;
+    margin: 20px auto;
+}
+
+/* Inputs */
+input[type="text"], input[type="number"] {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--gray);
+    color: white;
+    padding: 10px;
+    font-size: 16px;
+    text-align: center;
+    width: 100px;
+    margin: 0 10px;
+}
+
+input[type="range"] {
+    width: 100%;
+    max-width: 400px;
+    accent-color: var(--neon);
+}
+
+/* Status Bar */
+#status-msg {
+    height: 30px;
+    color: var(--neon);
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-top: 10px;
+}
+
+/* ---------------- DASHBOARD SPECIFIC ---------------- */
+.header { margin-top: 40px; text-align: center; }
+.tag { letter-spacing: 3px; color: #9aa0a6; font-size: 13px; }
+.title { font-size: 55px; margin-top: 10px; color: white; letter-spacing: 6px; text-shadow: 0 0 15px rgba(0, 255, 255, .7); }
+.subtitle { margin-top: 15px; color: var(--neon); letter-spacing: 3px; font-size: 18px; }
+.mentor-box { width: 700px; margin: 45px auto; padding: 25px; border: 1px solid rgba(255, 255, 255, .18); border-left: 4px solid var(--neon); background: rgba(0, 0, 0, .35); text-align: left; }
+.m-title { font-size: 13px; color: #9aa0a6; letter-spacing: 2px; }
+.m-name { font-size: 28px; font-weight: bold; margin-top: 8px; }
+.m-role { color: #ff3366; margin-top: 5px; }
+.section-title { width: 88%; margin: 15px auto; letter-spacing: 3px; color: #9aa0a6; font-size: 14px; text-align: left; }
+.team { width: 90%; margin: auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 25px; }
+.member { border: 1px solid rgba(255, 255, 255, .15); padding: 18px; background: rgba(0, 0, 0, .4); text-align: left; }
+.member .name { font-size: 18px; letter-spacing: 2px; }
+.member .id { margin-top: 5px; font-size: 13px; color: #9aa0a6; }
+
+/* Responsive */
+@media(max-width: 900px) {
+    .team { grid-template-columns: repeat(2, 1fr); }
+    .mentor-box { width: 85%; }
+}
+@media(max-width: 600px) {
+    .team { grid-template-columns: 1fr; }
+    .title { font-size: 38px; }
+    .nav { padding: 15px; flex-direction: column; gap: 15px; }
+}

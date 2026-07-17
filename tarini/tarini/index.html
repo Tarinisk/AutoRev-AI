@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Project Swarm – Controller</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- ---------------- NAV ---------------- -->
+<div class="nav">
+    <div class="logo">AUTOREV - AI</div>
+
+    <div class="nav-links">
+        <a href="dashboard.html">Home</a>
+        <a href="index.html">Controller</a>
+        <a href="voice.html">Voice</a>
+        <a href="#" onclick="toggleLiveFeed(); return false;" style="color: #ccc; text-decoration: none; font-size: 15px; letter-spacing: 1px; transition: 0.3s; text-transform: uppercase; cursor: pointer;">Live Feed</a>
+        <a href="settings.html">Settings</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="page-title">SELECT MODE</div>
+    <div class="page-subtitle">CHOOSE OPERATION MODE</div>
+
+    <div id="status-msg"></div>
+
+    <div style="display: flex; justify-content: center; gap: 40px; flex-wrap: wrap;">
+        
+        <!-- AUTO MODE CARD -->
+        <div class="card" style="width: 300px; text-align: center;">
+            <h2>AUTONOMOUS</h2>
+            <p style="color: #ccc; margin-bottom: 30px;">
+                Robot operates autonomously using onboard sensors and logic.
+            </p>
+            <button class="btn btn-large" onclick="activateAuto()">
+                ACTIVATE AUTO
+            </button>
+        </div>
+
+        <!-- MANUAL MODE CARD -->
+        <div class="card" style="width: 300px; text-align: center;">
+            <h2>MANUAL CONTROL</h2>
+            <p style="color: #ccc; margin-bottom: 30px;">
+                Take full control of the robot using keyboard or on-screen buttons.
+            </p>
+            <button class="btn btn-large" onclick="activateManual()">
+                ENTER MANUAL
+            </button>
+        </div>
+
+        <!-- VOICE MODE CARD -->
+        <div class="card" style="width: 300px; text-align: center;">
+            <h2>VOICE CONTROL</h2>
+            <p style="color: #ccc; margin-bottom: 30px;">
+                Control the robot using voice commands like "Forward", "Stop", etc.
+            </p>
+            <button class="btn btn-large" onclick="activateVoice()">
+                ENTER VOICE
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<script src="script.js"></script>
+<script>
+    function activateManual() {
+        send('MODE MANUAL');
+        setTimeout(() => {
+            window.location.href = 'manual.html';
+        }, 500);
+    }
+
+    function activateAuto() {
+        send('MODE AUTO');
+        setTimeout(() => {
+            window.location.href = 'autonomous.html';
+        }, 500);
+    }
+
+    function activateVoice() {
+        send('MODE VOICE');
+        setTimeout(() => {
+            window.location.href = 'voice.html';
+        }, 500);
+    }
+</script>
+
+</body>
+</html>
